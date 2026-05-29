@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Housecoming</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #F5F2ED;
+    --surface: #FFFFFF;
+    --surface2: #FAFAF8;
+    --text: #1A1814;
+    --text2: #6B6560;
+    --accent: #C4521A;
+    --accent-light: #F5E8DF;
+    --border: #E8E4DE;
+    --verified: #2D7A4F;
+    --verified-light: #E6F4EC;
+    --tag-bg: #F0EDE8;
+    --shadow: 0 2px 12px rgba(26,24,20,0.08);
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: 80px;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--surface);
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: -0.3px;
+  }
+  .logo span { color: var(--accent); }
+  .verified-badge {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--verified-light);
+    color: var(--verified);
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.2px;
+  }
+  .verified-badge::before { content: '✓'; font-weight: 700; }
+
+  .project-tag {
+    font-size: 12px;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+  .project-tag strong { color: var(--text); }
+
+  /* ── FILTERS ── */
+  .filters {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  .filters::-webkit-scrollbar { display: none; }
+  .filter-btn {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn.active {
+    background: var(--text);
+    border-color: var(--text);
+    color: white;
+  }
+
+  /* ── CONTENT ── */
+  .content { padding: 16px 16px 0; }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 12px;
+  }
+
+  /* ── DEAL CARD ── */
+  .deal-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--border);
+    transition: transform 0.15s;
+    cursor: pointer;
+  }
+  .deal-card:active { transform: scale(0.98); }
+
+  .deal-card-inner { padding: 16px; }
+
+  .deal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .brand-info { flex: 1; }
+  .brand-name {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .brand-category {
+    display: inline-block;
+    background: var(--tag-bg);
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+  .deal-badge {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 10px;
+    white-space: nowrap;
+    margin-left: 8px;
+  }
+
+  .deal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 18px;
+    line-height: 1.3;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .deal-desc {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .deal-meta {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .meta-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--text2);
+  }
+  .meta-item .icon { font-size: 13px; }
+
+  .deal-footer {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .btn-claim {
+    flex: 1;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-claim:active { background: #a8431a; }
+  .btn-details {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 11px 14px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .slots-bar {
+    background: var(--border);
+    border-radius: 4px;
+    height: 4px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .slots-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+    transition: width 0.3s;
+  }
+  .slots-text {
+    font-size: 11px;
+    color: var(--text2);
+    margin-bottom: 10px;
+  }
+  .slots-text span { color: var(--accent); font-weight: 600; }
+
+  /* ── CLAIM SHEET ── */
+  .sheet-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .sheet-overlay.open { display: flex; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .sheet {
+    background: var(--surface);
+    border-radius: 20px 20px 0 0;
+    width: 100%;
+    padding: 20px 20px 40px;
+    animation: slideUp 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .sheet-handle {
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 20px;
+  }
+  .sheet-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 22px;
+    margin-bottom: 4px;
+  }
+  .sheet-brand {
+    font-size: 13px;
+    color: var(--text2);
+    margin-bottom: 20px;
+  }
+
+  .claim-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 10px;
+    margin-top: 16px;
+  }
+
+  .claim-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: 10px;
+    margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .claim-row-label { font-size: 13px; color: var(--text2); }
+  .claim-row-value { font-size: 13px; font-weight: 600; }
+  .claim-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .toggle {
+    width: 36px;
+    height: 20px;
+    background: var(--verified);
+    border-radius: 10px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle.off { background: var(--border); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 18px;
+    transition: left 0.2s;
+  }
+  .toggle.off::after { left: 2px; }
+
+  .consent-note {
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.5;
+    margin: 12px 0 20px;
+    padding: 10px 12px;
+    background: var(--accent-light);
+    border-radius: 10px;
+  }
+
+  .btn-confirm {
+    width: 100%;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+  .btn-cancel {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: var(--text2);
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 12px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  /* ── SUCCESS STATE ── */
+  .success-screen {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: var(--surface);
+    z-index: 300;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+  }
+  .success-screen.show { display: flex; }
+  .success-icon { font-size: 64px; margin-bottom: 20px; }
+  .success-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 28px;
+    margin-bottom: 10px;
+  }
+  .success-text { font-size: 15px; color: var(--text2); line-height: 1.6; margin-bottom: 30px; }
+  .btn-back {
+    background: var(--text);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text2);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    padding: 8px 0 20px;
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    cursor: pointer;
+    padding: 4px 0;
+  }
+  .nav-icon { font-size: 20px; }
+  .nav-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text2);
+  }
+  .nav-item.active .nav-label { color: var(--accent); }
+  .nav-item.active .nav-icon { filter: none; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">house<span>things</span></div>
+    <div class="verified-badge">Verified</div>
+  </div>
+  <div class="project-tag">Deals for <strong>Central Weave @ AMK</strong></div>
+  <div class="filters">
+    <button class="filter-btn active" onclick="filterDeals('all')">All Deals</button>
+    <button class="filter-btn" onclick="filterDeals('Renovation')">🔨 Reno</button>
+    <button class="filter-btn" onclick="filterDeals('Aircon')">❄️ Aircon</button>
+    <button class="filter-btn" onclick="filterDeals('Furniture')">🛋️ Furniture</button>
+    <button class="filter-btn" onclick="filterDeals('Appliances')">📦 Appliances</button>
+    <button class="filter-btn" onclick="filterDeals('Flooring')">🪵 Flooring</button>
+    <button class="filter-btn" onclick="filterDeals('Smart Home')">💡 Smart</button>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="content">
+  <div class="section-label">Active Deals</div>
+  <div id="deals-container"></div>
+</div>
+
+<!-- CLAIM SHEET -->
+<div class="sheet-overlay" id="claimSheet" onclick="closeSheet(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="sheetDealTitle">Deal Title</div>
+    <div class="sheet-brand" id="sheetBrandName">Brand</div>
+
+    <div class="claim-section-title">Sharing with brand</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:10px;">
+      Toggle what you want to share. Brand only sees what you allow.
+    </p>
+
+    <div class="claim-row">
+      <span class="claim-row-label">Flat type</span>
+      <div class="claim-toggle">
+        <span class="claim-row-value" id="shareFlat">4-Room</span>
+        <div class="toggle" id="toggleFlat" onclick="toggleShare('Flat')"></div>
+      </div>
+    </div>
+    <div class="claim-row">
+      <span class="claim-row-label">Project</span>
+      <div class="claim-toggle">
+        <span class="claim-row-value" id="shareProject">Central Weave @ AMK</span>
+        <div class="toggle" id="toggleProject" onclick="toggleShare('Project')"></div>
+      </div>
+    </div>
+    <div class="claim-row">
+      <span class="claim-row-label">Contact via Telegram</span>
+      <div class="claim-toggle">
+        <span class="claim-row-value" id="shareContact">@username</span>
+        <div class="toggle" id="toggleContact" onclick="toggleShare('Contact')"></div>
+      </div>
+    </div>
+
+    <div class="consent-note">
+      🔒 Your data is only shared with this brand for this deal. Housecoming never sells your data.
+    </div>
+
+    <button class="btn-confirm" onclick="confirmClaim()">Confirm Claim</button>
+    <button class="btn-cancel" onclick="closeSheetBtn()">Cancel</button>
+  </div>
+</div>
+
+<!-- SUCCESS SCREEN -->
+<div class="success-screen" id="successScreen">
+  <div class="success-icon">🎉</div>
+  <div class="success-title">Deal Claimed!</div>
+  <div class="success-text" id="successText">The brand will reach out to you soon via Telegram.</div>
+  <button class="btn-back" onclick="hideSuccess()">Back to Deals</button>
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active">
+    <div class="nav-icon">🏷️</div>
+    <div class="nav-label">Deals</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">💬</div>
+    <div class="nav-label">Community</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">📋</div>
+    <div class="nav-label">My Claims</div>
+  </div>
+  <div class="nav-item">
+    <div class="nav-icon">👤</div>
+    <div class="nav-label">Profile</div>
+  </div>
+</div>
+
+<script>
+// ── TELEGRAM WEB APP INIT ────────────────────────────────────────────────────
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+
+// Get user info from Telegram
+const tgUser = tg.initDataUnsafe?.user || {};
+const userName = tgUser.username ? `@${tgUser.username}` : "Not set";
+
+// ── SAMPLE DEALS DATA ────────────────────────────────────────────────────────
+// In production this fetches from your Google Sheets via a simple API
+const DEALS = [
+  {
+    id: "D001",
+    brand: "Renoace ID",
+    category: "Renovation",
+    title: "Full renovation package — 15% off for Central Weave residents",
+    desc: "Award-winning ID firm with 200+ HDB projects. Includes design consultation, hacking, carpentry, painting and tiling.",
+    discount: "15% OFF",
+    slots_total: 30,
+    slots_taken: 12,
+    expiry: "30 Jun 2025",
+    contact: "Telegram DM",
+    telegraph_url: "https://telegra.ph",
+  },
+  {
+    id: "D002",
+    brand: "Daikin Authorised",
+    category: "Aircon",
+    title: "$200 off per aircon unit — project group rate",
+    desc: "5-tick energy efficient units. Free installation, 5-year warranty. Minimum 2 units. Ideal for 4-room and above.",
+    discount: "$200/unit",
+    slots_total: 50,
+    slots_taken: 28,
+    expiry: "15 Jul 2025",
+    contact: "Phone",
+    telegraph_url: "https://telegra.ph",
+  },
+  {
+    id: "D003",
+    brand: "Commune Furniture",
+    category: "Furniture",
+    title: "Trade pricing — showroom rate without the showroom visit",
+    desc: "Full home furniture packages. Sofas, beds, dining, storage. Customisable sizes. Delivery and assembly included.",
+    discount: "Trade Price",
+    slots_total: 20,
+    slots_taken: 5,
+    expiry: "31 Jul 2025",
+    contact: "Telegram DM",
+    telegraph_url: "https://telegra.ph",
+  },
+  {
+    id: "D004",
+    brand: "Floors & More",
+    category: "Flooring",
+    title: "Vinyl plank flooring — $3.50/sqft (usual $5.50)",
+    desc: "Waterproof SPC vinyl planks, 30+ designs. Free delivery. Installation available at $1.50/sqft add-on.",
+    discount: "$3.50/sqft",
+    slots_total: 40,
+    slots_taken: 40,
+    expiry: "30 Jun 2025",
+    contact: "Email",
+    telegraph_url: "https://telegra.ph",
+  },
+];
+
+let currentFilter = "all";
+let currentDeal = null;
+let shareToggles = { Flat: true, Project: true, Contact: true };
+
+// ── RENDER DEALS ─────────────────────────────────────────────────────────────
+function renderDeals() {
+  const container = document.getElementById("deals-container");
+  const filtered = currentFilter === "all"
+    ? DEALS
+    : DEALS.filter(d => d.category === currentFilter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <p>No deals in this category yet.<br>Check back soon!</p>
+      </div>`;
+    return;
+  }
+
+  container.innerHTML = filtered.map(deal => {
+    const pct = Math.round((deal.slots_taken / deal.slots_total) * 100);
+    const isFull = deal.slots_taken >= deal.slots_total;
+    return `
+    <div class="deal-card" onclick="openDealSheet('${deal.id}')">
+      <div class="deal-card-inner">
+        <div class="deal-header">
+          <div class="brand-info">
+            <div class="brand-name">${deal.brand}</div>
+            <span class="brand-category">${deal.category}</span>
+          </div>
+          <div class="deal-badge">${deal.discount}</div>
+        </div>
+        <div class="deal-title">${deal.title}</div>
+        <div class="deal-desc">${deal.desc}</div>
+        <div class="deal-meta">
+          <div class="meta-item"><span class="icon">📅</span> Until ${deal.expiry}</div>
+          <div class="meta-item"><span class="icon">📬</span> Via ${deal.contact}</div>
+        </div>
+        <div class="slots-text">
+          <span>${deal.slots_total - deal.slots_taken}</span> of ${deal.slots_total} slots remaining
+        </div>
+        <div class="slots-bar">
+          <div class="slots-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="deal-footer">
+          ${isFull
+            ? `<button class="btn-claim" style="background:var(--text2)" disabled>Fully Claimed</button>`
+            : `<button class="btn-claim" onclick="event.stopPropagation();openDealSheet('${deal.id}')">Claim Deal</button>`
+          }
+          <button class="btn-details" onclick="event.stopPropagation();viewDetails('${deal.id}')">Details</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────────
+function filterDeals(cat) {
+  currentFilter = cat;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  event.target.classList.add("active");
+  renderDeals();
+}
+
+// ── CLAIM SHEET ──────────────────────────────────────────────────────────────
+function openDealSheet(dealId) {
+  currentDeal = DEALS.find(d => d.id === dealId);
+  if (!currentDeal || currentDeal.slots_taken >= currentDeal.slots_total) return;
+
+  document.getElementById("sheetDealTitle").textContent = currentDeal.title;
+  document.getElementById("sheetBrandName").textContent = currentDeal.brand;
+  document.getElementById("shareContact").textContent = userName;
+
+  // Reset toggles
+  shareToggles = { Flat: true, Project: true, Contact: true };
+  ["Flat", "Project", "Contact"].forEach(k => {
+    document.getElementById(`toggle${k}`).classList.remove("off");
+  });
+
+  document.getElementById("claimSheet").classList.add("open");
+}
+
+function closeSheet(e) {
+  if (e.target.id === "claimSheet") closeSheetBtn();
+}
+function closeSheetBtn() {
+  document.getElementById("claimSheet").classList.remove("open");
+  currentDeal = null;
+}
+
+function toggleShare(key) {
+  shareToggles[key] = !shareToggles[key];
+  const el = document.getElementById(`toggle${key}`);
+  el.classList.toggle("off", !shareToggles[key]);
+}
+
+function confirmClaim() {
+  if (!currentDeal) return;
+
+  // Log to Telegram via sendData
+  const claimData = {
+    deal_id: currentDeal.id,
+    brand: currentDeal.brand,
+    shared_flat: shareToggles.Flat,
+    shared_project: shareToggles.Project,
+    shared_contact: shareToggles.Contact,
+    telegram_id: tgUser.id,
+    username: tgUser.username,
+    timestamp: new Date().toISOString(),
+  };
+
+  // Send to bot for logging
+  tg.sendData(JSON.stringify(claimData));
+
+  closeSheetBtn();
+  showSuccess(currentDeal.contact);
+}
+
+function showSuccess(contactMethod) {
+  document.getElementById("successText").textContent =
+    contactMethod === "Telegram DM"
+      ? "The brand will reach out to you via Telegram DM soon."
+      : contactMethod === "Phone"
+      ? "The brand will call or WhatsApp you soon."
+      : "The brand will email you soon.";
+  document.getElementById("successScreen").classList.add("show");
+}
+
+function hideSuccess() {
+  document.getElementById("successScreen").classList.remove("show");
+  renderDeals();
+}
+
+function viewDetails(dealId) {
+  const deal = DEALS.find(d => d.id === dealId);
+  if (deal?.telegraph_url) {
+    tg.openLink(deal.telegraph_url);
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderDeals();
+</script>
+</body>
+</html>
