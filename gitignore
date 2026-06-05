@@ -1,0 +1,23 @@
+# Google credentials — NEVER commit this
+google_creds.json
+*.json
+
+# Environment files
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Replit
+.replit
+replit.nix
+.upm/
