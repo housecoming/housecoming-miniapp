@@ -700,311 +700,261 @@ body {
   </button>
 </div>
 
-<script>
-// ── TELEGRAM INIT ────────────────────────────────────────────────────────────
-const tg      = window.Telegram.WebApp;
-tg.ready();
-tg.expand();
-const params = new URLSearchParams(window.location.search);
-window._memberCount = params.get('count') ? parseInt(params.get('count')) : null;
-const tgUser  = tg.initDataUnsafe?.user || {};
-const userName = tgUser.username ? `@${tgUser.username}` : "Not set";
+  <script>
+  // ── TELEGRAM INIT ────────────────────────────────────────────────────────────
+  const tg      = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+  const params = new URLSearchParams(window.location.search);
+  window._memberCount = params.get('count') ? parseInt(params.get('count')) : null;
+  const tgUser  = tg.initDataUnsafe?.user || {};
+  const userName = tgUser.username ? `@${tgUser.username}` : "Not set";
 
-// ── DEALS DATA ───────────────────────────────────────────────────────────────
-// In production: fetch from your Google Sheets API endpoint
-const DEALS = [
-  {
-    id: "D001",
-    brand: "Renoace ID",
-    category: "Renovation",
-    title: "Full renovation package — 15% off for Central Weave residents",
-    desc: "Award-winning ID firm with 200+ HDB projects completed. Package includes design consultation, hacking, carpentry, painting, and tiling.",
-    discount: "15% OFF",
-    slots_total: 30,
-    slots_taken: 12,
-    expiry: "30 Jun 2025",
-    contact: "Telegram DM",
-    telegraph_url: "https://telegra.ph",
-  },
-  {
-    id: "D002",
-    brand: "Daikin Authorised",
-    category: "Aircon",
-    title: "$200 off per aircon unit — Central Weave project group rate",
-    desc: "5-tick energy efficient units. Free installation, 5-year compressor warranty. Minimum 2 units. Ideal for 4-room and above.",
-    discount: "$200/unit",
-    slots_total: 50,
-    slots_taken: 31,
-    expiry: "15 Jul 2025",
-    contact: "Phone",
-    telegraph_url: "https://telegra.ph",
-  },
-  {
-    id: "D003",
-    brand: "Commune Furniture",
-    category: "Furniture",
-    title: "Trade pricing — showroom rates for verified residents",
-    desc: "Full home furniture packages. Sofas, beds, dining sets, storage. Customisable sizes to fit your flat layout. Delivery and assembly included.",
-    discount: "Trade Price",
-    slots_total: 20,
-    slots_taken: 5,
-    expiry: "31 Jul 2025",
-    contact: "Telegram DM",
-    telegraph_url: "https://telegra.ph",
-  },
-  {
-    id: "D004",
-    brand: "Floors & More",
-    category: "Flooring",
-    title: "SPC vinyl plank flooring — $3.50/sqft (usual $5.50)",
-    desc: "Waterproof SPC vinyl planks in 30+ designs. Free delivery to Central Weave. Professional installation available at $1.50/sqft add-on.",
-    discount: "$3.50/sqft",
-    slots_total: 40,
-    slots_taken: 40,
-    expiry: "30 Jun 2025",
-    contact: "Email",
-    telegraph_url: "https://telegra.ph",
-  },
-];
+  // ── STATE ────────────────────────────────────────────────────────────────────
+  let activeCategory = "all";
+  let activeTab      = "deals";
+  let currentDeal    = null;
+  let shareToggles   = { Flat: true, Project: true, Contact: true };
+  let DEALS          = []; // Starts empty, fetches live!
 
-
-// ── STATE ────────────────────────────────────────────────────────────────────
-let activeCategory = "all";
-let activeTab      = "deals";
-let currentDeal    = null;
-let shareToggles   = { Flat: true, Project: true, Contact: true };
-
-// ── CATEGORY FILTER ──────────────────────────────────────────────────────────
-function setCategory(cat, el) {
-  activeCategory = cat;
-  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderDeals();
-}
-
-// ── RENDER DEALS ─────────────────────────────────────────────────────────────
-function renderDeals() {
-  const container = document.getElementById('dealsContainer');
-  const label     = document.getElementById('sectionLabel');
-
-  if (activeTab === 'claims') {
-    label.textContent = 'My Claims';
-    container.innerHTML = emptyState('No claims yet.<br>Browse deals and claim your first one 🏷️');
-    return;
+  // ── FETCH LIVE DEALS ─────────────────────────────────────────────────────────
+  async function fetchDeals() {
+    try {
+      // ⚠️ IMPORTANT: Replace this URL with your actual Replit URL after you hit "Run"
+      const response = await fetch('https://housecoming-bot--housecoming.replit.app/api/deals');
+      DEALS = await response.json();
+      renderDeals();
+    } catch (error) {
+      console.error("Error fetching deals:", error);
+      document.getElementById('dealsContainer').innerHTML = emptyState("Could not load active deals right now.");
+    }
   }
 
-  // Deals tab
-  label.textContent = activeCategory === 'all' ? 'Active Deals' : activeCategory + ' Deals';
-
-  // Always show leverage banner at top of deals tab
-  const count = window._memberCount ? `${window._memberCount} verified residents` : 'residents';
-  const bannerHtml = `
-  <div class="leverage-banner">
-    <div class="leverage-banner-title">🏷️ Deals are coming.</div>
-    <div class="leverage-banner-body">
-      We're currently approaching brands on behalf of Central Weave residents.
-      The more of us there are, the stronger our negotiating position — brands care about volume.
-    </div>
-    <div class="leverage-banner-count">${count} and growing</div>
-    <div class="leverage-banner-bar-row">
-      <span class="leverage-banner-bar-label">Negotiating leverage</span>
-      <span class="leverage-banner-bar"><span class="leverage-banner-fill"></span></span>
-    </div>
-    <div class="leverage-banner-hint">Growing with every new member 🏠</div>
-    <button class="btn-invite-sm" onclick="shareInvite()">📣 Invite a neighbour</button>
-  </div>`;
-  const filtered = activeCategory === 'all'
-    ? DEALS
-    : DEALS.filter(d => d.category === activeCategory);
-
-  if (!filtered.length) {
-    container.innerHTML = bannerHtml + emptyState('No deals in this category yet.', activeCategory === 'all');
-    return;
+  // ── CATEGORY FILTER ──────────────────────────────────────────────────────────
+  function setCategory(cat, el) {
+    activeCategory = cat;
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderDeals();
   }
 
-  container.innerHTML = bannerHtml + filtered.map(deal => {
-    const pct    = Math.round((deal.slots_taken / deal.slots_total) * 100);
-    const full   = deal.slots_taken >= deal.slots_total;
-    const left   = deal.slots_total - deal.slots_taken;
-    return `
-    <div class="deal-card" onclick="openDeal('${deal.id}')">
-      <div class="card-body">
-        <div class="card-top">
-          <div class="brand-col">
-            <div class="brand-name">${deal.brand}</div>
-            <span class="cat-tag">${deal.category}</span>
+  // ── RENDER DEALS ─────────────────────────────────────────────────────────────
+  function renderDeals() {
+    const container = document.getElementById('dealsContainer');
+    const label     = document.getElementById('sectionLabel');
+
+    if (activeTab === 'claims') {
+      label.textContent = 'My Claims';
+      container.innerHTML = emptyState('No claims yet.<br>Browse deals and claim your first one 🏷️');
+      return;
+    }
+
+    label.textContent = activeCategory === 'all' ? 'Active Deals' : activeCategory + ' Deals';
+
+    const count = window._memberCount ? `${window._memberCount} verified residents` : 'residents';
+    const bannerHtml = `
+    <div class="leverage-banner">
+      <div class="leverage-banner-title">🏷️ Deals are coming.</div>
+      <div class="leverage-banner-body">
+        We're currently approaching brands on behalf of Central Weave residents.
+        The more of us there are, the stronger our negotiating position — brands care about volume.
+      </div>
+      <div class="leverage-banner-count">${count} and growing</div>
+      <div class="leverage-banner-bar-row">
+        <span class="leverage-banner-bar-label">Negotiating leverage</span>
+        <span class="leverage-banner-bar"><span class="leverage-banner-fill"></span></span>
+      </div>
+      <div class="leverage-banner-hint">Growing with every new member 🏠</div>
+      <button class="btn-invite-sm" onclick="shareInvite()">📣 Invite a neighbour</button>
+    </div>`;
+
+    const filtered = activeCategory === 'all'
+      ? DEALS
+      : DEALS.filter(d => d.category === activeCategory);
+
+    if (!filtered.length) {
+      container.innerHTML = bannerHtml + emptyState('No deals in this category yet.', activeCategory === 'all');
+      return;
+    }
+
+    container.innerHTML = bannerHtml + filtered.map(deal => {
+      const pct    = deal.slots_total > 0 ? Math.round((deal.slots_taken / deal.slots_total) * 100) : 0;
+      const full   = deal.slots_total > 0 && deal.slots_taken >= deal.slots_total;
+      const left   = deal.slots_total > 0 ? deal.slots_total - deal.slots_taken : 'Unlimited';
+      return `
+      <div class="deal-card" onclick="openDeal('${deal.id}')">
+        <div class="card-body">
+          <div class="card-top">
+            <div class="brand-col">
+              <div class="brand-name">${deal.brand}</div>
+              <span class="cat-tag">${deal.category}</span>
+            </div>
+            <div class="discount-badge">${deal.discount}</div>
           </div>
-          <div class="discount-badge">${deal.discount}</div>
+          <div class="deal-title">${deal.title}</div>
+          <div class="deal-desc">${deal.desc}</div>
+          <div class="card-meta">
+            <div class="meta-chip">📅 Until ${deal.expiry}</div>
+            <div class="meta-chip">📬 Via ${deal.contact}</div>
+          </div>
+          <div class="slots-row">
+            ${full
+              ? `<span class="slots-text" style="color:var(--accent)">Fully claimed</span>`
+              : `<span class="slots-text"><strong>${left}</strong> slots left</span>`}
+            <span class="slots-text">${pct}% claimed</span>
+          </div>
+          <div class="slots-bar">
+            <div class="slots-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="card-actions">
+            ${full
+              ? `<button class="btn-claim" disabled>Fully Claimed</button>`
+              : `<button class="btn-claim" onclick="event.stopPropagation();openClaimSheet('${deal.id}')">
+                  Claim Deal
+                 </button>`}
+            <button class="btn-details" onclick="event.stopPropagation();openTelegraph('${deal.telegraph_url}')">
+              Full Details
+            </button>
+          </div>
         </div>
-        <div class="deal-title">${deal.title}</div>
-        <div class="deal-desc">${deal.desc}</div>
-        <div class="card-meta">
-          <div class="meta-chip">📅 Until ${deal.expiry}</div>
-          <div class="meta-chip">📬 Via ${deal.contact}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function emptyState(msg, isDeals = false) {
+    if (isDeals) {
+      const count = window._memberCount || null;
+      const countLine = count
+        ? `<div class="empty-count">${count} verified residents and counting.</div>`
+        : '';
+      return `
+      <div class="empty empty-deals">
+        <div class="empty-icon">🏠</div>
+        <div class="empty-headline">Deals are on their way.</div>
+        <p class="empty-body">
+          We're negotiating with brands on behalf of Central Weave residents right now.
+          The more of us there are, the stronger our position — brands move faster
+          when they see real volume.
+        </p>
+        ${countLine}
+        <div class="empty-leverage">
+          <span class="leverage-bar-wrap">
+            <span class="leverage-label">Negotiating leverage</span>
+            <span class="leverage-bar"><span class="leverage-fill"></span></span>
+          </span>
+          <span class="leverage-hint">Growing with every new member</span>
         </div>
-        <div class="slots-row">
-          ${full
-            ? `<span class="slots-text" style="color:var(--accent)">Fully claimed</span>`
-            : `<span class="slots-text"><strong>${left}</strong> of ${deal.slots_total} slots left</span>`}
-          <span class="slots-text">${pct}% claimed</span>
-        </div>
-        <div class="slots-bar">
-          <div class="slots-fill" style="width:${pct}%"></div>
-        </div>
-        <div class="card-actions">
-          ${full
-            ? `<button class="btn-claim" disabled>Fully Claimed</button>`
-            : `<button class="btn-claim" onclick="event.stopPropagation();openClaimSheet('${deal.id}')">
-                Claim Deal
-               </button>`}
-          <button class="btn-details" onclick="event.stopPropagation();openTelegraph('${deal.telegraph_url}')">
-            Full Details
-          </button>
-        </div>
-      </div>
+        <button class="btn-invite" onclick="shareInvite()">
+          Invite a neighbour →
+        </button>
+      </div>`;
+    }
+    return `<div class="empty">
+      <div class="empty-icon">🔍</div>
+      <p>${msg}</p>
     </div>`;
-  }).join('');
-}
-
-function emptyState(msg, isDeals = false) {
-  if (isDeals) {
-    const count = window._memberCount || null;
-    const countLine = count
-      ? `<div class="empty-count">${count} verified residents and counting.</div>`
-      : '';
-    return `
-    <div class="empty empty-deals">
-      <div class="empty-icon">🏠</div>
-      <div class="empty-headline">Deals are on their way.</div>
-      <p class="empty-body">
-        We're negotiating with brands on behalf of Central Weave residents right now.
-        The more of us there are, the stronger our position — brands move faster
-        when they see real volume.
-      </p>
-      ${countLine}
-      <div class="empty-leverage">
-        <span class="leverage-bar-wrap">
-          <span class="leverage-label">Negotiating leverage</span>
-          <span class="leverage-bar"><span class="leverage-fill"></span></span>
-        </span>
-        <span class="leverage-hint">Growing with every new member</span>
-      </div>
-      <button class="btn-invite" onclick="shareInvite()">
-        Invite a neighbour →
-      </button>
-    </div>`;
   }
-  return `<div class="empty">
-    <div class="empty-icon">🔍</div>
-    <p>${msg}</p>
-  </div>`;
-}
 
-// ── TABS ─────────────────────────────────────────────────────────────────────
-function showTab(tab, el) {
-  activeTab = tab;
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  // Reset category when switching tabs
-  if (tab === 'deals') {
-    document.getElementById('catScroll').style.display = 'flex';
-  } else {
-    document.getElementById('catScroll').style.display = 'none';
-    activeCategory = 'all';
+  // ── TABS ─────────────────────────────────────────────────────────────────────
+  function showTab(tab, el) {
+    activeTab = tab;
+    document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    if (tab === 'deals') {
+      document.getElementById('catScroll').style.display = 'flex';
+    } else {
+      document.getElementById('catScroll').style.display = 'none';
+      activeCategory = 'all';
+    }
+    renderDeals();
   }
-  renderDeals();
-}
 
-// ── OPEN DEAL (scroll to top) ─────────────────────────────────────────────────
-function openDeal(id) {
-  // Tapping the card scrolls to top and highlights — future enhancement
-  // For now just opens claim sheet on tap
-  openClaimSheet(id);
-}
-
-// ── TELEGRAPH ────────────────────────────────────────────────────────────────
-function openTelegraph(url) {
-  if (url && url !== '#') {
-    tg.openLink(url);
+  // ── OPEN DEAL ─────────────────────────────────────────────────────────────────
+  function openDeal(id) {
+    openClaimSheet(id);
   }
-}
 
-// ── CLAIM SHEET ──────────────────────────────────────────────────────────────
-function openClaimSheet(dealId) {
-  currentDeal = DEALS.find(d => d.id === dealId);
-  if (!currentDeal || currentDeal.slots_taken >= currentDeal.slots_total) return;
+  // ── TELEGRAPH ────────────────────────────────────────────────────────────────
+  function openTelegraph(url) {
+    if (url && url !== '#' && url !== 'none') {
+      tg.openLink(url);
+    }
+  }
 
-  document.getElementById('sheetTitle').textContent   = currentDeal.title;
-  document.getElementById('sheetBrand').textContent   = currentDeal.brand;
+  // ── CLAIM SHEET ──────────────────────────────────────────────────────────────
+  function openClaimSheet(dealId) {
+    currentDeal = DEALS.find(d => d.id === dealId);
+    if (!currentDeal || (currentDeal.slots_total > 0 && currentDeal.slots_taken >= currentDeal.slots_total)) return;
+
+    document.getElementById('sheetTitle').textContent   = currentDeal.title;
+    document.getElementById('sheetBrand').textContent   = currentDeal.brand;
+    document.getElementById('shareContact').textContent = userName;
+
+    shareToggles = { Flat: true, Project: true, Contact: true };
+    ['Flat','Project','Contact'].forEach(k => {
+      document.getElementById(`toggle${k}`).classList.remove('off');
+    });
+
+    document.getElementById('claimOverlay').classList.add('open');
+  }
+
+  function overlayTap(e) {
+    if (e.target.id === 'claimOverlay') closeSheet();
+  }
+
+  function closeSheet() {
+    document.getElementById('claimOverlay').classList.remove('open');
+    currentDeal = null;
+  }
+
+  function toggleShare(key) {
+    shareToggles[key] = !shareToggles[key];
+    document.getElementById(`toggle${key}`).classList.toggle('off', !shareToggles[key]);
+  }
+
+  function confirmClaim() {
+    if (!currentDeal) return;
+    const data = {
+      action:           'claim',
+      deal_id:          currentDeal.id,
+      brand:            currentDeal.brand,
+      shared_flat:      shareToggles.Flat,
+      shared_project:   shareToggles.Project,
+      shared_contact:   shareToggles.Contact,
+      telegram_id:      tgUser.id,
+      username:         tgUser.username,
+      timestamp:        new Date().toISOString(),
+    };
+    tg.sendData(JSON.stringify(data));
+    closeSheet();
+    showSuccess(currentDeal.contact);
+  }
+
+  // ── SUCCESS ───────────────────────────────────────────────────────────────────
+  function showSuccess(contactMethod) {
+    const msgs = {
+      'Telegram DM': "The brand will reach out via Telegram DM.",
+      'Phone':       "The brand will call or WhatsApp you soon.",
+      'Email':       "The brand will email you soon.",
+    };
+    document.getElementById('successText').textContent =
+      msgs[contactMethod] || "The brand will reach out shortly.";
+    document.getElementById('successScreen').classList.add('show');
+  }
+
+  function closeSuccess() {
+    document.getElementById('successScreen').classList.remove('show');
+    renderDeals();
+  }
+
+  // ── SHARE / INVITE ────────────────────────────────────────────────────────────
+  function shareInvite() {
+    tg.openTelegramLink('https://t.me/HousecomingSGbot');
+  }
+
+  // ── INIT ──────────────────────────────────────────────────────────────────────
   document.getElementById('shareContact').textContent = userName;
-
-  // Reset toggles
-  shareToggles = { Flat: true, Project: true, Contact: true };
-  ['Flat','Project','Contact'].forEach(k => {
-    document.getElementById(`toggle${k}`).classList.remove('off');
-  });
-
-  document.getElementById('claimOverlay').classList.add('open');
-}
-
-function overlayTap(e) {
-  if (e.target.id === 'claimOverlay') closeSheet();
-}
-
-function closeSheet() {
-  document.getElementById('claimOverlay').classList.remove('open');
-  currentDeal = null;
-}
-
-function toggleShare(key) {
-  shareToggles[key] = !shareToggles[key];
-  document.getElementById(`toggle${key}`).classList.toggle('off', !shareToggles[key]);
-}
-
-function confirmClaim() {
-  if (!currentDeal) return;
-  const data = {
-    action:           'claim',
-    deal_id:          currentDeal.id,
-    brand:            currentDeal.brand,
-    shared_flat:      shareToggles.Flat,
-    shared_project:   shareToggles.Project,
-    shared_contact:   shareToggles.Contact,
-    telegram_id:      tgUser.id,
-    username:         tgUser.username,
-    timestamp:        new Date().toISOString(),
-  };
-  tg.sendData(JSON.stringify(data));
-  closeSheet();
-  showSuccess(currentDeal.contact);
-}
-
-
-// ── SUCCESS ───────────────────────────────────────────────────────────────────
-function showSuccess(contactMethod) {
-  const msgs = {
-    'Telegram DM': "The brand will reach out via Telegram DM.",
-    'Phone':       "The brand will call or WhatsApp you soon.",
-    'Email':       "The brand will email you soon.",
-  };
-  document.getElementById('successText').textContent =
-    msgs[contactMethod] || "The brand will reach out shortly.";
-  document.getElementById('successScreen').classList.add('show');
-}
-
-function closeSuccess() {
-  document.getElementById('successScreen').classList.remove('show');
-  renderDeals();
-}
-
-// ── SHARE / INVITE ────────────────────────────────────────────────────────────
-function shareInvite() {
-  tg.openTelegramLink('https://t.me/HousecomingSGbot');
-}
-
-// ── INIT ──────────────────────────────────────────────────────────────────────
-document.getElementById('shareContact').textContent = userName;
-renderDeals();
-</script>
-</body>
-</html>
+  fetchDeals(); // Load live deals!
+  </script>
+  </body>
+  </html>
